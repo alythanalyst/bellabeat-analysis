@@ -1,0 +1,89 @@
+---
+title: "Bellabeat Data Analysis Report"
+author: "Aly"
+output: html_document
+---
+
+## Introduction
+In this analysis, we explored smart device usage data to provide insights for Bellabeat's marketing strategy.
+
+## Data Preparation
+The data was cleaned and merged to ensure consistency and accuracy.
+
+## Data Loading and Preparation
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+# Load the data (use your file paths if necessary)
+daily_activity <- read.csv("dailyActivity_merged.csv")
+daily_calories <- read.csv("dailyCalories_merged.csv")
+
+# Convert date columns to Date format
+daily_activity$ActivityDate <- mdy(daily_activity$ActivityDate)
+daily_calories$ActivityDay <- mdy(daily_calories$ActivityDay)
+
+# Merge the datasets and check column names
+combined_data <- merge(daily_activity, daily_calories, by.x = c("Id", "ActivityDate"), by.y = c("Id", "ActivityDay"))
+
+# Check column names to ensure 'Calories' column is present
+colnames(combined_data)
+
+# Rename columns if necessary to ensure consistent naming
+if ("Calories.x" %in% colnames(combined_data)) {
+  colnames(combined_data)[colnames(combined_data) == "Calories.x"] <- "Calories"
+}
+
+# Create a summary of activity levels
+activity_summary <- combined_data %>%
+  mutate(
+    activity_level = case_when(
+      TotalSteps >= 10000 ~ "High",
+      TotalSteps >= 5000 & TotalSteps < 10000 ~ "Medium",
+      TRUE ~ "Low"
+    )
+  ) %>%
+  group_by(activity_level) %>%
+  summarise(
+    mean_steps = mean(TotalSteps, na.rm = TRUE),
+    mean_calories = mean(Calories, na.rm = TRUE)
+  )
+
+```
+
+```{r}
+# Bar chart for mean steps by activity level
+ggplot(activity_summary, aes(x = activity_level, y = mean_steps, fill = activity_level)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Average Steps by Activity Level") +
+  xlab("Activity Level") +
+  ylab("Average Steps") +
+  theme_minimal()
+
+# Bar chart for mean calories by activity level
+ggplot(activity_summary, aes(x = activity_level, y = mean_calories, fill = activity_level)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Average Calories Burned by Activity Level") +
+  xlab("Activity Level") +
+  ylab("Average Calories") +
+  theme_minimal()
+```
+```{r}
+# Trend analysis of TotalSteps over time
+ggplot(combined_data, aes(x = ActivityDate, y = TotalSteps)) +
+  geom_line(color = "blue") +
+  ggtitle("Trend of Total Steps Over Time") +
+  xlab("Date") +
+  ylab("Total Steps") +
+  theme_minimal()
+
+# Trend analysis of Calories burned over time
+ggplot(combined_data, aes(x = ActivityDate, y = Calories)) +
+  geom_line(color = "red") +
+  ggtitle("Trend of Calories Burned Over Time") +
+  xlab("Date") +
+  ylab("Calories") +
+  theme_minimal()
+```
